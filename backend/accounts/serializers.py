@@ -40,12 +40,25 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # allow email login instead of username
-        attrs['username'] = attrs.get('email')
-        return super().validate(attrs)
+        # Allow email login instead of username
+        email = attrs.get('email')
+        password = attrs.get('password')
 
-# 👤 User Detail Serializer (optional)
+        if email and password:
+            # Update the username field to use email for authentication
+            attrs['username'] = email  # Map email to username for Django auth
+            data = super().validate(attrs)  # Validate credentials and get tokens
+            # Ensure the user is stored in the serializer instance
+            self.user = self.user or self.context['request'].user
+            return data
+        else:
+            raise serializers.ValidationError(
+                'Must include "email" and "password".',
+                code='authorization'
+            )
+
+# 👤 User Detail Serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'bio', 'profile_picture', 'date_joined')
+        fields = ('id', 'email', 'username', 'bio', 'profile_picture', 'date_joined', 'is_staff')

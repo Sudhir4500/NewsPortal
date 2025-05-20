@@ -1,0 +1,24 @@
+import { User } from './auth';
+
+// Category type (matches Django Category model)
+export interface Category {
+  id: string; // UUID
+  name: string;
+  slug: string;
+}
+
+// News type (matches Django News model)
+export interface News {
+  id: string; // UUID
+  title: string;
+  slug: string;
+  content: string;
+  author: User; // Nested user object (from accounts app)
+  category: Category; // Nested category object
+  category_id: string; // UUID (used for creating/updating news)
+  image: string | null; // URL to image (nullable)
+  published_at: string; // ISO 8601 datetime (e.g., "2025-05-18T15:14:00Z")
+  updated_at: string; // ISO 8601 datetime
+}
+
+export { User };
