@@ -41,4 +41,4 @@ export const setCookie = (name: string, value: string, options: Cookies.CookieAt
 
 export const getCookie = (name: string): string | undefined => Cookies.get(name);
 
-export const removeCookie = (name: string) => Cookies.set(name, '', { expires: -1 });
+export const removeCookie = (name: string, p0: { path: string; }) => Cookies.set(name, '', { expires: -1 });

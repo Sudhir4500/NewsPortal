@@ -7,15 +7,30 @@ export default async function Home() {
   const news: News[] = await apiGet<News[]>('/news/');
 
   return (
-    <div className="container mx-auto p-4">
-      <AdBanner />
-      {/* Main content area */}
-      <h1 className="text-3xl font-bold mb-4">News Portal</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {news.map((item) => (
-          <NewsCard key={item.id} news={item} />
-        ))}
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Ad Banner */}
+      <div className="mb-8">
+        <AdBanner />
       </div>
-    </div>
+
+      {/* Header */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          Welcome to the News Portal
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Get the latest updates across categories, curated for you.
+        </p>
+      </div>
+
+      {/* News Grid */}
+      <section>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {news.map((item) => (
+            <NewsCard key={item.id} news={item} />
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
-import { apiPost } from '@/app/api/api';
-import { setToken, setRefreshToken } from '@/app/api/cookie';
+import { useAuthStore } from '@/app/stores/authStore';
+
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -12,17 +12,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { login } = useAuthStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
-      const res = await apiPost('/auth/login/', { email, password }) as { access: string; refresh: string };
-      setToken(res.access);
-      setRefreshToken(res.refresh);
+      await login(email, password); // Use useAuthStore's login
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError('Invalid email or password');
+      setError(err.response?.data?.detail || 'Invalid email or password');
     }
   };
 

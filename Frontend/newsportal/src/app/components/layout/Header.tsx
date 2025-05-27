@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa'; // Search icon from react-icons
 import Search from '../features/Search';
+import Category from '../categorylist/Category';
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -27,6 +28,7 @@ export default function Header() {
           {/* <Link href="/" className="hover:underline">
             Home
           </Link> */}
+          <Category />
            <button
             onClick={() => setIsSearchOpen(!isSearchOpen)}
             className="text-white hover:text-gray-300 focus:outline-none"

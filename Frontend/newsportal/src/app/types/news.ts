@@ -1,5 +1,13 @@
 import { User } from './auth';
 
+// tag type (matches Django Tag model)
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+
 // Category type (matches Django Category model)
 export interface Category {
   id: string; // UUID
@@ -9,6 +17,7 @@ export interface Category {
 
 // News type (matches Django News model)
 export interface News {
+  tags: Tag[];
   id: string; // UUID
   title: string;
   slug: string;
@@ -21,4 +30,6 @@ export interface News {
   updated_at: string; // ISO 8601 datetime
 }
 
-export { User };
+
+export type { User };
+

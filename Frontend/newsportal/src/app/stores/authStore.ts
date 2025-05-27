@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getCookie, setCookie, removeCookie } from '@/app/api/cookie';
-import { apiPost } from '../api/api';
+import { apiPost, apiGet } from '../api/api';
 import { AuthResponse, User } from '@/app/types/auth';
 
 interface AuthState {
@@ -14,18 +14,29 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
+  refreshAccessToken: () => Promise<void>;
+  checkTokenValidity: () => Promise<boolean>;
 }
 
-const initialAccessToken = getCookie('access_token') || null;
-const initialRefreshToken = getCookie('refresh_token') || null;
+// Helper function to decode JWT and check if it's expired
+const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expiry = payload.exp * 1000; // Convert to milliseconds
+    return Date.now() >= expiry;
+  } catch (error) {
+    return true; // If token is invalid or malformed, treat as expired
+  }
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
-      isAuthenticated: !!initialAccessToken,
+    (set, get) => ({
+      isAuthenticated: false,
       user: null,
-      accessToken: initialAccessToken,
-      refreshToken: initialRefreshToken,
+      accessToken: null,
+      refreshToken: null,
       login: async (email: string, password: string) => {
         try {
           const response = await apiPost<AuthResponse>('/auth/login/', { email, password });
@@ -35,11 +46,11 @@ export const useAuthStore = create<AuthState>()(
             accessToken: response.access,
             refreshToken: response.refresh,
           });
-          setCookie('access_token', response.access, { path: '/' });
-          setCookie('refresh_token', response.refresh, { path: '/' });
+          setCookie('access_token', response.access, { path: '/', secure: true, sameSite: 'strict' });
+          setCookie('refresh_token', response.refresh, { path: '/', secure: true, sameSite: 'strict' });
         } catch (error: any) {
-          console.error('Login failed:', error.response?.data || error.message);
-          throw error;
+          const message = error.response?.data?.detail || 'Login failed. Please check your credentials.';
+          throw new Error(message);
         }
       },
       logout: () => {
@@ -49,22 +60,66 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
         });
-        removeCookie('access_token');
-        removeCookie('refresh_token');
+        removeCookie('access_token', { path: '/' });
+        removeCookie('refresh_token', { path: '/' });
       },
       setUser: (user: User | null) => {
-        set({ user });
+        set({ user, isAuthenticated: !!user });
+      },
+      refreshAccessToken: async () => {
+        try {
+          const { refreshToken, accessToken } = get();
+          // Check if access token is already expired
+          if (isTokenExpired(accessToken)) {
+            if (!refreshToken) {
+              get().logout();
+              throw new Error('No refresh token available');
+            }
+            const response = await apiPost<AuthResponse>('/auth/refresh/', { refresh: refreshToken });
+            set({
+              isAuthenticated: true,
+              accessToken: response.access,
+            });
+            setCookie('access_token', response.access, { path: '/', secure: true, sameSite: 'strict' });
+          }
+        } catch (error: any) {
+          // If refresh fails, logout and clear cookies
+          get().logout();
+          throw new Error('Session expired. Please log in again.');
+        }
+      },
+      checkTokenValidity: async () => {
+        const { accessToken, refreshAccessToken } = get();
+        if (isTokenExpired(accessToken)) {
+          try {
+            await refreshAccessToken();
+            return true;
+          } catch (error) {
+            return false;
+          }
+        }
+        return true;
       },
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         user: state.user,
+        isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
+
+// Optional: Periodic token check (can be called in a useEffect in a top-level component)
+export const startTokenCheck = () => {
+  const interval = setInterval(async () => {
+    const { checkTokenValidity, logout } = useAuthStore.getState();
+    const isValid = await checkTokenValidity();
+    if (!isValid) {
+      logout();
+    }
+  }, 5 * 60 * 1000); // Check every 5 minutes
+  return () => clearInterval(interval);
+};

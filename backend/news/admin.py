@@ -10,4 +10,9 @@ class CategoryAdmin(admin.ModelAdmin):
 class NewsAdmin(admin.ModelAdmin):
     list_display = ['title', 'author', 'category', 'published_at', 'id']
     list_filter = ['category', 'published_at']
-    prepopulated_fields = {'slug': ('title',)}
+
+# @admin.register(Tag)
+# class TagAdmin(admin.ModelAdmin):
+#     list_display = ['name', 'slug', 'id']
+#     prepopulated_fields = {'slug': ('name',)}
+

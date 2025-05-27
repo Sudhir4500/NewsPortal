@@ -6,20 +6,33 @@ import Image from 'next/image';
 import { apiGet } from '@/app/api/api';
 import { Ad } from '@/app/types/ads';
 
+// Define fallback image for broken/missing images
+const FALLBACK_IMAGE = '/images/fallback-ad.jpg';
+
 const AdBanner: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch ads on mount
   useEffect(() => {
     const fetchAds = async () => {
       try {
+        setIsLoading(true);
         const data = await apiGet<Ad[]>('/ads/');
-        setAds(data);
+        console.log('Fetched ads:', data); // Debug: Log API response
+        if (Array.isArray(data)) {
+          setAds(data);
+        } else {
+          console.error('Unexpected API response format:', data);
+          setError('Invalid ad data format.');
+        }
       } catch (err: any) {
-        console.error('Failed to fetch ads:', err.message);
+        console.error('Failed to fetch ads:', err.message, err);
         setError('Failed to load ads. Please try again later.');
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchAds();
@@ -27,16 +40,16 @@ const AdBanner: React.FC = () => {
 
   // Auto-cycle through ads every 5 seconds
   useEffect(() => {
-    if (ads.length <= 1) return; // No need for carousel if 0 or 1 ad
+    if (ads.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
-    }, 5000); // Change ad every 5 seconds
+    }, 5000);
 
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(interval);
   }, [ads]);
 
-  // Handle manual navigation (optional)
+  // Handle manual navigation
   const goToPrevious = () => {
     setCurrentAdIndex((prevIndex) => (prevIndex - 1 + ads.length) % ads.length);
   };
@@ -44,6 +57,10 @@ const AdBanner: React.FC = () => {
   const goToNext = () => {
     setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
   };
+
+  if (isLoading) {
+    return <div className="text-center text-gray-500 p-4">Loading ads...</div>;
+  }
 
   if (error) {
     return <div className="text-center text-red-500 p-4">{error}</div>;
@@ -53,29 +70,31 @@ const AdBanner: React.FC = () => {
     return <div className="text-center text-gray-500 p-4">No ads available.</div>;
   }
 
-  const currentAd = ads[currentAdIndex];
+  // Safeguard for invalid index
+  const currentAd = ads[currentAdIndex] || ads[0];
 
   return (
-    <div className="relative w-full mx-auto mb-8">
+    <div className="relative w-full max-w-7xl mx-auto mb-8">
       {/* Ad Banner */}
-      <Link href={currentAd.url} target="_blank" rel="noopener noreferrer">
+      <Link href={currentAd.url || '#'} target="_blank" rel="noopener noreferrer">
         <div className="relative w-full h-40 md:h-64">
           <Image
-            src={currentAd.image}
-            alt={currentAd.title}
+            src={currentAd.image || FALLBACK_IMAGE}
+            alt={currentAd.title || 'Advertisement'}
             fill
             style={{ objectFit: 'cover' }}
             className="rounded-lg"
-            priority={true} // Prioritize loading for above-the-fold content
+            priority={true}
             sizes="100vw"
+            onError={() => console.error(`Failed to load image: ${currentAd.image}`)}
           />
           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 rounded-b-lg">
-            <p className="text-sm md:text-lg">{currentAd.title}</p>
+            <p className="text-sm md:text-lg">{currentAd.title || 'No title'}</p>
           </div>
         </div>
       </Link>
 
-      {/* Navigation Arrows (Optional) */}
+      {/* Navigation Arrows */}
       {ads.length > 1 && (
         <>
           <button
@@ -93,7 +112,7 @@ const AdBanner: React.FC = () => {
         </>
       )}
 
-      {/* Dots for Navigation (Optional) */}
+      {/* Dots for Navigation */}
       {ads.length > 1 && (
         <div className="flex justify-center mt-2 space-x-2">
           {ads.map((_, index) => (

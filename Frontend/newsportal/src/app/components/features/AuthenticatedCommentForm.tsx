@@ -1,26 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useAuthStore } from '@/app/stores/authStore';
 import CommentForm from './CommentForm';
 import LoginForm from './LoginForm';
-import { apiGet } from '@/app/api/api';
+import { useState, useRef } from 'react';
 
 export default function AuthenticatedCommentForm({ newsId }: { newsId: string }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await apiGet('/auth/users/me/');
-        if (user) setIsAuthenticated(true);
-      } catch {
-        setIsAuthenticated(false);
-      }
-    };
-    checkAuth();
-  }, []);
+  const { isAuthenticated } = useAuthStore();
 
   if (isAuthenticated) {
     return <CommentForm newsId={newsId} />;
@@ -45,7 +33,7 @@ export default function AuthenticatedCommentForm({ newsId }: { newsId: string })
         }`}
       >
         <div className="mt-4 border p-4 rounded-lg shadow bg-white">
-          <LoginForm onSuccess={() => setIsAuthenticated(true)} />
+          <LoginForm onSuccess={() => setShowLoginForm(false)} />
         </div>
       </div>
     </div>

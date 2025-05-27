@@ -1,4 +1,3 @@
-// src/types/ads.ts
 export interface Ad {
   id: string; // UUID
   title: string;
