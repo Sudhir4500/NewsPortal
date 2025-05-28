@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getCookie, setCookie, removeCookie } from '@/app/api/cookie';
 import { apiPost, apiGet } from '../api/api';
 import { AuthResponse, User } from '@/app/types/auth';
+import { useRouter } from 'next/navigation';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -62,43 +63,51 @@ export const useAuthStore = create<AuthState>()(
         });
         removeCookie('access_token', { path: '/' });
         removeCookie('refresh_token', { path: '/' });
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       },
       setUser: (user: User | null) => {
         set({ user, isAuthenticated: !!user });
       },
       refreshAccessToken: async () => {
         try {
-          const { refreshToken, accessToken } = get();
-          // Check if access token is already expired
-          if (isTokenExpired(accessToken)) {
-            if (!refreshToken) {
-              get().logout();
-              throw new Error('No refresh token available');
-            }
-            const response = await apiPost<AuthResponse>('/auth/refresh/', { refresh: refreshToken });
-            set({
-              isAuthenticated: true,
-              accessToken: response.access,
-            });
-            setCookie('access_token', response.access, { path: '/', secure: true, sameSite: 'strict' });
+          const { refreshToken } = get();
+          if (!refreshToken || isTokenExpired(refreshToken)) {
+            get().logout();
+            throw new Error('No valid refresh token available');
           }
+          const response = await apiPost<AuthResponse>('/auth/refresh/', { refresh: refreshToken });
+          set({
+            isAuthenticated: true,
+            accessToken: response.access,
+          });
+          setCookie('access_token', response.access, { path: '/', secure: true, sameSite: 'strict' });
         } catch (error: any) {
-          // If refresh fails, logout and clear cookies
           get().logout();
           throw new Error('Session expired. Please log in again.');
         }
       },
       checkTokenValidity: async () => {
         const { accessToken, refreshAccessToken } = get();
-        if (isTokenExpired(accessToken)) {
+        if (!accessToken || isTokenExpired(accessToken)) {
           try {
             await refreshAccessToken();
             return true;
           } catch (error) {
+            get().logout();
             return false;
           }
         }
-        return true;
+        // Verify user session with backend
+        try {
+          await apiGet('/auth/me/'); // Endpoint to verify user session
+          return true;
+        } catch (error: any) {
+          get().logout();
+          return false;
+        }
       },
     }),
     {
@@ -112,14 +121,11 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Optional: Periodic token check (can be called in a useEffect in a top-level component)
+// Periodic token check for background validation
 export const startTokenCheck = () => {
   const interval = setInterval(async () => {
-    const { checkTokenValidity, logout } = useAuthStore.getState();
-    const isValid = await checkTokenValidity();
-    if (!isValid) {
-      logout();
-    }
-  }, 5 * 60 * 1000); // Check every 5 minutes
+    const { checkTokenValidity } = useAuthStore.getState();
+    await checkTokenValidity();
+  }, 60 * 1000); // Check every 1 minute
   return () => clearInterval(interval);
 };

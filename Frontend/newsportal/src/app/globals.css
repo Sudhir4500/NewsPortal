@@ -56,3 +56,8 @@ footer {
 .loader {
   @apply flex items-center justify-center;
 }
+
+/* hide horizontal scrollbar */
+::-webkit-scrollbar {
+  display: none;
+}

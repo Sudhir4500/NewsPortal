@@ -1,8 +1,8 @@
+// category/[category]/page.tsx
 import { redirect } from 'next/navigation';
 import { apiGet } from '@/app/api/api';
-import { News } from '@/app/types/news'; // Adjusted import path
+import { News } from '@/app/types/news';
 import NewsCard from '@/app/components/features/NewsCard';
-// import { formatDate } from '@utils/formatDate';
 
 interface CategoryPageProps {
   params: { category: string };
@@ -23,20 +23,24 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   if (news.length === 0) {
     return (
-      <div className="container mx-auto p-4">
-        <p className="text-red-500">No news found in the {params.category} category.</p>
+      <div className="container mx-auto px-4 py-8">
+        <p className="text-red-500 text-lg font-medium text-center">
+          No news found in the {params.category} category.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">{params.category} News</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-min">
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8 capitalize">
+        {params.category} News
+      </h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
         {news.map((item) => (
           <div
             key={item.id}
-            className={item.image ? 'lg:col-span-2' : 'lg:col-span-1'}
+            className="flex justify-center"
           >
             <NewsCard news={item} />
           </div>

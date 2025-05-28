@@ -28,6 +28,8 @@ export interface News {
   image: string | null; // URL to image (nullable)
   published_at: string; // ISO 8601 datetime (e.g., "2025-05-18T15:14:00Z")
   updated_at: string; // ISO 8601 datetime
+  is_trending: boolean; // Whether this news is trending
+  is_carousel: boolean; // Whether this news is featured in the carousel
 }
 
 

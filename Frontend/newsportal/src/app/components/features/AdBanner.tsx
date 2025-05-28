@@ -1,19 +1,20 @@
-"use client"; // Client Component for interactivity (carousel)
-
-import { useState, useEffect } from 'react';
+'use client';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { apiGet } from '@/app/api/api';
 import { Ad } from '@/app/types/ads';
 
-// Define fallback image for broken/missing images
+// Fallback image for broken/missing images
 const FALLBACK_IMAGE = '/images/fallback-ad.jpg';
 
-const AdBanner: React.FC = () => {
+export default function AdBanner() {
   const [ads, setAds] = useState<Ad[]>([]);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   // Fetch ads on mount
   useEffect(() => {
@@ -21,7 +22,6 @@ const AdBanner: React.FC = () => {
       try {
         setIsLoading(true);
         const data = await apiGet<Ad[]>('/ads/');
-        console.log('Fetched ads:', data); // Debug: Log API response
         if (Array.isArray(data)) {
           setAds(data);
         } else {
@@ -29,8 +29,8 @@ const AdBanner: React.FC = () => {
           setError('Invalid ad data format.');
         }
       } catch (err: any) {
-        console.error('Failed to fetch ads:', err.message, err);
-        setError('Failed to load ads. Please try again later.');
+        console.error('Failed to fetch ads:', err.message);
+        setError('Failed to load ads.');
       } finally {
         setIsLoading(false);
       }
@@ -38,24 +38,27 @@ const AdBanner: React.FC = () => {
     fetchAds();
   }, []);
 
-  // Auto-cycle through ads every 5 seconds
+  // Auto-cycle every 5 seconds
   useEffect(() => {
-    if (ads.length <= 1) return;
+    if (ads.length <= 1 || isPaused) return;
 
     const interval = setInterval(() => {
-      setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
+      setCurrentIndex((prev) => (prev + 1) % ads.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [ads]);
+  }, [ads.length, isPaused]);
 
-  // Handle manual navigation
-  const goToPrevious = () => {
-    setCurrentAdIndex((prevIndex) => (prevIndex - 1 + ads.length) % ads.length);
-  };
-
-  const goToNext = () => {
-    setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
+  // Keyboard navigation (optional, for accessibility)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft') {
+      setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
+      e.preventDefault();
+    }
+    if (e.key === 'ArrowRight') {
+      setCurrentIndex((prev) => (prev + 1) % ads.length);
+      e.preventDefault();
+    }
   };
 
   if (isLoading) {
@@ -70,64 +73,51 @@ const AdBanner: React.FC = () => {
     return <div className="text-center text-gray-500 p-4">No ads available.</div>;
   }
 
-  // Safeguard for invalid index
-  const currentAd = ads[currentAdIndex] || ads[0];
-
   return (
-    <div className="relative w-full max-w-7xl mx-auto mb-8">
-      {/* Ad Banner */}
-      <Link href={currentAd.url || '#'} target="_blank" rel="noopener noreferrer">
-        <div className="relative w-full h-40 md:h-64">
-          <Image
-            src={currentAd.image || FALLBACK_IMAGE}
-            alt={currentAd.title || 'Advertisement'}
-            fill
-            style={{ objectFit: 'cover' }}
-            className="rounded-lg"
-            priority={true}
-            sizes="100vw"
-            onError={() => console.error(`Failed to load image: ${currentAd.image}`)}
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 rounded-b-lg">
-            <p className="text-sm md:text-lg">{currentAd.title || 'No title'}</p>
+    <div
+      ref={bannerRef}
+      className="relative w-full max-w-7xl mx-auto mb-8 focus:outline-none"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label="Advertisement banner"
+    >
+      <div className="relative overflow-hidden rounded-xl h-40 md:h-64">
+        {ads.map((ad, index) => (
+          <div
+            key={ad.id}
+            className={`absolute w-full h-full transition-opacity duration-500 ease-in-out ${
+              index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            }`}
+            aria-hidden={index !== currentIndex}
+            role="group"
+            aria-roledescription="ad"
+            aria-label={`Ad ${index + 1} of ${ads.length}`}
+          >
+            <Link href={ad.url || '#'} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+              <div className="relative w-full h-full group">
+                <Image
+                  src={ad.image || FALLBACK_IMAGE}
+                  alt={ad.title || 'Advertisement'}
+                  fill
+                  className="object-cover rounded-xl"
+                  priority={index === currentIndex}
+                  sizes="(max-width: 768px) 100vw, 672px"
+                  quality={80}
+                  loading={index === currentIndex ? 'eager' : 'lazy'}
+                  onError={() => console.error(`Failed to load ad image: ${ad.image}`)}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70 flex flex-col justify-end p-3 md:p-4 rounded-xl z-20">
+                  <h3 className="text-sm md:text-lg font-bold text-white drop-shadow-md line-clamp-2">
+                    {ad.title || 'Advertisement'}
+                  </h3>
+                </div>
+              </div>
+            </Link>
           </div>
-        </div>
-      </Link>
-
-      {/* Navigation Arrows */}
-      {ads.length > 1 && (
-        <>
-          <button
-            onClick={goToPrevious}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full opacity-75 hover:opacity-100"
-          >
-            ←
-          </button>
-          <button
-            onClick={goToNext}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full opacity-75 hover:opacity-100"
-          >
-            →
-          </button>
-        </>
-      )}
-
-      {/* Dots for Navigation */}
-      {ads.length > 1 && (
-        <div className="flex justify-center mt-2 space-x-2">
-          {ads.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentAdIndex(index)}
-              className={`w-3 h-3 rounded-full ${
-                index === currentAdIndex ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-            />
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
-};
-
-export default AdBanner;
+}

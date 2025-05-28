@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     # 'ads',
     'accounts',
     'comments',
@@ -163,11 +164,11 @@ REST_FRAMEWORK = {
 
 # simple JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Short-lived access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),   # Long-lived refresh token
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
 }
 
 # Custom user model
@@ -220,6 +221,10 @@ LOGGING = {
  # Timezone settings
 TIME_ZONE = 'Asia/Kathmandu'  # Nepal Time, UTC+05:45
 USE_TZ = True  # Keep timezone support enabled
+
+
+# CORS settings
+CORS_ALLOW_CREDENTIALS = True
 
 
 
