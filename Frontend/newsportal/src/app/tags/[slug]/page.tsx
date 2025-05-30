@@ -3,11 +3,15 @@ import Tags from '@/app/components/features/Tags';
 import { News } from '@/app/types/news';
 import Link from 'next/link';
 
+// Define the props interface with params as a Promise
 interface TagPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function TagPage({ params }: TagPageProps) {
+  // Await the params to resolve the dynamic route parameter
+  const { slug } = await params;
+
   let newsItems: News[] = [];
   let tagName: string | null = null;
 
@@ -15,15 +19,15 @@ export default async function TagPage({ params }: TagPageProps) {
     // Fetch tags to get the tag name
     const tags = await apiGet<{ id: string; slug: string; name: string }[]>('/news/tags/');
     console.log('Fetched tags:', JSON.stringify(tags, null, 2));
-    console.log('Searching for slug:', params.slug);
-    const tag = tags.find((t) => t.slug.toLowerCase() === params.slug.toLowerCase());
+    console.log('Searching for slug:', slug);
+    const tag = tags.find((t) => t.slug.toLowerCase() === slug.toLowerCase());
     
     if (!tag) {
-      console.error(`Tag "${params.slug}" not found in tags list`);
+      console.error(`Tag "${slug}" not found in tags list`);
       return (
         <div className="max-w-5xl mx-auto p-6">
           <div className="bg-yellow-100 text-yellow-700 p-4 rounded-md">
-            <p>Tag "{params.slug}" not found.</p>
+            <p>Tag "{slug}" not found.</p>
             <p>Please ensure the tag exists in the backend. You can create it via the admin panel or by adding a news item with this tag.</p>
           </div>
         </div>
@@ -39,7 +43,7 @@ export default async function TagPage({ params }: TagPageProps) {
     return (
       <div className="max-w-5xl mx-auto p-6">
         <div className="bg-red-100 text-red-700 p-4 rounded-md">
-          <p>Failed to load news for tag "{params.slug}".</p>
+          <p>Failed to load news for tag "{slug}".</p>
           <p>Error: {error.message}</p>
           <p>Ensure the backend is running and the tag exists.</p>
         </div>

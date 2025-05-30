@@ -4,18 +4,22 @@ import { apiGet } from '@/app/api/api';
 import { News } from '@/app/types/news';
 import NewsCard from '@/app/components/categorylist/NewsCard';
 
+// Define the props interface with params as a Promise
 interface CategoryPageProps {
-  params: { category: string };
+  params: Promise<{ category: string }>;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
+  // Await the params to resolve the dynamic route parameter
+  const { category } = await params;
+
   let news: News[] = [];
   try {
-    // Fetch news for the category (assuming backend supports category filtering)
-    news = await apiGet<News[]>(`/news/?category=${encodeURIComponent(params.category)}`);
+    // Fetch news for the category
+    news = await apiGet<News[]>(`/news/?category=${encodeURIComponent(category)}`);
     // Redirect to lowercase category for consistency
-    if (params.category.toLowerCase() !== params.category) {
-      redirect(`/category/${params.category.toLowerCase()}`);
+    if (category.toLowerCase() !== category) {
+      redirect(`/category/${category.toLowerCase()}`);
     }
   } catch (error: any) {
     console.error('Failed to fetch category news:', error.message);
@@ -25,7 +29,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-red-500 text-lg font-medium text-center">
-          No news found in the {params.category} category.
+          No news found in the {category} category.
         </p>
       </div>
     );
@@ -34,7 +38,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-gray-900 mb-8 capitalize">
-        {params.category} News
+        {category} News
       </h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {news.map((item) => (
