@@ -98,20 +98,20 @@ WSGI_APPLICATION = 'core.wsgi.application'
 #     }
 # }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'newsdb',
-        'USER': 'postgres',
-        'PASSWORD': '12345',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
 # DATABASES = {
-#     'default': dj_database_url.parse(os.environ.get('POSTGRES_URL'),conn_max_age=600, ssl_require=True)
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'newsdb',
+#         'USER': 'postgres',
+#         'PASSWORD': '12345',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
 # }
+
+DATABASES = {
+    'default': dj_database_url.parse(os.environ.get('POSTGRES_URL'),conn_max_age=600, ssl_require=True)
+}
 
 
 # Password validation
