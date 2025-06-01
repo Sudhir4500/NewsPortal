@@ -5,13 +5,15 @@ from django.utils import timezone
 import logging
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from cloudinary.models import CloudinaryField
 
 logger = logging.getLogger(__name__)
 
 class Ad(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200)
-    image = models.ImageField(upload_to='ads/', blank=True, null=True)
+    # image = models.ImageField(upload_to='ads/', blank=True, null=True)
+    image = CloudinaryField('image', blank=True, null=True, help_text="Upload an image for the ad. Supported formats: jpg, png, webp.")
     url = models.URLField()
     advertiser = models.ForeignKey(User, on_delete=models.CASCADE)
     start_date = models.DateTimeField()

@@ -15,6 +15,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import dj_database_url  # Add this import for dj_database_url
+import cloudinary  # Import Cloudinary for image management
 # Load environment variables from .env file
 load_dotenv()
 
@@ -232,6 +233,12 @@ USE_TZ = True  # Keep timezone support enabled
 # CORS settings
 CORS_ALLOW_CREDENTIALS = True
 
+# Cloudinary settings
+
+
+cloudinary.config( 
+  secure = True
+)
 
 
 

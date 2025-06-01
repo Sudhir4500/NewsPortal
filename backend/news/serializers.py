@@ -37,10 +37,18 @@ class NewsSerializer(TaggitSerializer, serializers.ModelSerializer):
     tags = TagListSerializerField(required=False, allow_null=True, allow_empty=True)
     is_trending = serializers.BooleanField(default=False)
     is_carousel = serializers.BooleanField(default=False)
+    image=serializers.SerializerMethodField()
 
     class Meta:
         model = News
         fields = ['id', 'title', 'slug', 'content', 'author', 'category', 'category_id', 'tags', 'image', 'published_at', 'updated_at', 'is_trending', 'is_carousel']
+
+
+        # get directly image url 
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
