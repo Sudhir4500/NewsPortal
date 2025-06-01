@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'cloudinary',
+    'cloudinary_storage',  # For Cloudinary storage backend
+    
     # 'ads',
     'accounts',
     'comments',
