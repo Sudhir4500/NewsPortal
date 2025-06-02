@@ -4,7 +4,8 @@ import { getToken } from './cookie';
 
 const api: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/',
-  timeout: 20000, // 20 seconds timeout for requests means we won't wait indefinitely
+  // timeout: 20000,
+  //  20 seconds timeout for requests means we won't wait indefinitely
   // DO NOT set 'Content-Type' here — let Axios set it automatically per request
 });
 
