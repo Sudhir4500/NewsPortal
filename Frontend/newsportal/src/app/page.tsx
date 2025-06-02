@@ -9,6 +9,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
 import HomeSkeleton from './components/loading/HomeSkeleton';
+import { formatDate } from '@/utils/formatDate';
+
 
 // Import Next.js PageProps or define searchParams as a Promise
 
@@ -22,13 +24,6 @@ interface HomePageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-function formatDate(dateStr: string | undefined): string {
-  if (!dateStr) return 'No Date';
-  const date = new Date(dateStr);
-  return isNaN(date.getTime())
-    ? 'Invalid Date'
-    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 async function fetchHomeData(categoryLimit = 5, trendingLimit = 6, carouselLimit = 5) {
   const [carouselNews, trendingEntries, allCategories] = await Promise.all([
