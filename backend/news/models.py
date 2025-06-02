@@ -6,7 +6,7 @@ from django.utils.text import slugify
 from taggit.managers import TaggableManager
 from .tagging import CustomUUIDTaggedItem
 
-# from cloudinary.models import CloudinaryField
+from cloudinary.models import CloudinaryField
 
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -37,8 +37,8 @@ class News(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     tags = TaggableManager(through=CustomUUIDTaggedItem, blank=True)
-    image = models.ImageField(upload_to='news/', blank=True, null=True)
-    # image=CloudinaryField('image', blank=True, null=True, help_text="Upload an image for the news article. Supported formats: jpg, png, webp.")
+    # image = models.ImageField(upload_to='news/', blank=True, null=True)
+    image=CloudinaryField('image', blank=True, null=True, help_text="Upload an image for the news article. Supported formats: jpg, png, webp.")
     published_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_trending = models.BooleanField(default=False, help_text="Check to mark this news as trending.")
