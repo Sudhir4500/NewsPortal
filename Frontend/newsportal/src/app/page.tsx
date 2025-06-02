@@ -1,4 +1,3 @@
-// Optimized Home Page Code
 import { apiGet } from '@/app/api/api';
 import { News } from './types/news';
 import { Category } from './types/news';
@@ -11,12 +10,16 @@ import Image from 'next/image';
 import { Suspense } from 'react';
 import HomeSkeleton from './components/loading/HomeSkeleton';
 
+// Import Next.js PageProps or define searchParams as a Promise
+
+
 interface CategoryWithNews extends Category {
   news: News[];
 }
 
+// Use Next.js PageProps directly or define searchParams as a Promise
 interface HomePageProps {
-  searchParams: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 function formatDate(dateStr: string | undefined): string {
@@ -62,6 +65,8 @@ async function fetchHomeData(categoryLimit = 5, trendingLimit = 6, carouselLimit
 }
 
 async function HomeContent({ searchParams }: HomePageProps) {
+  // Resolve the searchParams Promise
+  const resolvedSearchParams = await searchParams;
   const { carouselNews, trendingNews, categories } = await fetchHomeData();
 
   return (
@@ -114,7 +119,8 @@ async function HomeContent({ searchParams }: HomePageProps) {
                     </h3>
                     <div className="flex justify-between items-center text-sm text-gray-100">
                       <span>
-                        By {trendingNews[0].author?.username || 'Anonymous'} | {formatDate(trendingNews[0].published_at)}
+                        By {trendingNews[0].author?.username || 'Anonymous'} |{' '}
+                        {formatDate(trendingNews[0].published_at)}
                       </span>
                       <span className="bg-blue-700 text-xs px-3 py-1 rounded-full">
                         {trendingNews[0].category.name}
@@ -190,7 +196,7 @@ async function HomeContent({ searchParams }: HomePageProps) {
               <div className="grid grid-flow-col auto-cols-max gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
                 {category.news.map((news) => (
                   <div key={news.id} className="snap-start">
-                    <NewsCard news={news} variant='scroll' />
+                    <NewsCard news={news} variant="scroll" />
                   </div>
                 ))}
               </div>
@@ -206,7 +212,7 @@ async function HomeContent({ searchParams }: HomePageProps) {
   );
 }
 
-export default function Home({ searchParams }: HomePageProps) {
+export default async function Home({ searchParams }: HomePageProps) {
   return (
     <Suspense fallback={<HomeSkeleton />}>
       <HomeContent searchParams={searchParams} />
