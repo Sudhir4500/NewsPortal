@@ -65,7 +65,7 @@ export const useAuthStore = create<AuthState>()(
         removeCookie('refresh_token', { path: '/' });
         // Redirect to login page
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          window.location.href = '/';
         }
       },
       setUser: (user: User | null) => {
