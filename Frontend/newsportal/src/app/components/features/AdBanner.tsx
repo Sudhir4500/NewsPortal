@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { apiGet } from '@/app/api/api';
 import { Ad } from '@/app/types/ads';
+import { promises } from 'dns';
 
 // Fallback image for broken/missing images
 const FALLBACK_IMAGE = '/images/fallback-ad.jpg';

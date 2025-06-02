@@ -1,6 +1,6 @@
-// src/app/api/cookie.ts
 import Cookies from 'js-cookie';
 
+// Set access token with 1-day expiration to match backend ACCESS_TOKEN_LIFETIME
 export const setToken = (token: string, options: Cookies.CookieAttributes = {}) => {
   Cookies.set('access_token', token, {
     expires: 1, // 1 day
@@ -11,10 +11,15 @@ export const setToken = (token: string, options: Cookies.CookieAttributes = {}) 
   });
 };
 
+// Get access token
 export const getToken = (): string | undefined => Cookies.get('access_token');
 
-export const removeToken = () => Cookies.set('access_token', '', { expires: -1 });
+// Remove access token
+export const removeToken = (options: Cookies.CookieAttributes = {}) => {
+  Cookies.remove('access_token', { path: '/', ...options });
+};
 
+// Set refresh token with 7-day expiration to match backend REFRESH_TOKEN_LIFETIME
 export const setRefreshToken = (token: string, options: Cookies.CookieAttributes = {}) => {
   Cookies.set('refresh_token', token, {
     expires: 7, // 7 days
@@ -25,13 +30,18 @@ export const setRefreshToken = (token: string, options: Cookies.CookieAttributes
   });
 };
 
+// Get refresh token
 export const getRefreshToken = (): string | undefined => Cookies.get('refresh_token');
 
-export const removeRefreshToken = () => Cookies.set('refresh_token', '', { expires: -1 });
+// Remove refresh token
+export const removeRefreshToken = (options: Cookies.CookieAttributes = {}) => {
+  Cookies.remove('refresh_token', { path: '/', ...options });
+};
 
+// Generic cookie setter with explicit expiration
 export const setCookie = (name: string, value: string, options: Cookies.CookieAttributes = {}) => {
   Cookies.set(name, value, {
-    expires: 7,
+    expires: options.expires || 7, // Default to 7 days, but allow override
     path: '/',
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
@@ -39,6 +49,10 @@ export const setCookie = (name: string, value: string, options: Cookies.CookieAt
   });
 };
 
+// Get generic cookie
 export const getCookie = (name: string): string | undefined => Cookies.get(name);
 
-export const removeCookie = (name: string, p0: { path: string; }) => Cookies.set(name, '', { expires: -1 });
+// Remove generic cookie
+export const removeCookie = (name: string, options: Cookies.CookieAttributes = {}) => {
+  Cookies.remove(name, { path: '/', ...options });
+};

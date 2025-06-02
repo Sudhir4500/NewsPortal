@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { getCookie, setCookie, removeCookie } from '@/app/api/cookie';
+import { getCookie, setCookie, removeCookie, getToken, setToken, getRefreshToken, setRefreshToken, removeToken, removeRefreshToken } from '@/app/api/cookie';
 import { apiPost, apiGet } from '../api/api';
 import { AuthResponse, User } from '@/app/types/auth';
 import { useRouter } from 'next/navigation';
@@ -36,8 +36,8 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       isAuthenticated: false,
       user: null,
-      accessToken: null,
-      refreshToken: null,
+      accessToken: getToken() || null, // Initialize from cookie
+      refreshToken: getRefreshToken() || null, // Initialize from cookie
       login: async (email: string, password: string) => {
         try {
           const response = await apiPost<AuthResponse>('/auth/login/', { email, password });
@@ -47,8 +47,8 @@ export const useAuthStore = create<AuthState>()(
             accessToken: response.access,
             refreshToken: response.refresh,
           });
-          setCookie('access_token', response.access, { path: '/', secure: true, sameSite: 'strict' });
-          setCookie('refresh_token', response.refresh, { path: '/', secure: true, sameSite: 'strict' });
+          setToken(response.access);
+          setRefreshToken(response.refresh);
         } catch (error: any) {
           const message = error.response?.data?.detail || 'Login failed. Please check your credentials.';
           throw new Error(message);
@@ -61,9 +61,8 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
         });
-        removeCookie('access_token', { path: '/' });
-        removeCookie('refresh_token', { path: '/' });
-        // Redirect to login page
+        removeToken();
+        removeRefreshToken();
         if (typeof window !== 'undefined') {
           window.location.href = '/';
         }
@@ -78,12 +77,16 @@ export const useAuthStore = create<AuthState>()(
             get().logout();
             throw new Error('No valid refresh token available');
           }
-          const response = await apiPost<AuthResponse>('/auth/refresh/', { refresh: refreshToken });
+          const response = await apiPost<AuthResponse>('/refresh/', { refresh: refreshToken });
           set({
             isAuthenticated: true,
             accessToken: response.access,
+            refreshToken: response.refresh || refreshToken, // Update if new refresh token provided
           });
-          setCookie('access_token', response.access, { path: '/', secure: true, sameSite: 'strict' });
+          setToken(response.access);
+          if (response.refresh) {
+            setRefreshToken(response.refresh);
+          }
         } catch (error: any) {
           get().logout();
           throw new Error('Session expired. Please log in again.');
@@ -100,9 +103,8 @@ export const useAuthStore = create<AuthState>()(
             return false;
           }
         }
-        // Verify user session with backend
         try {
-          await apiGet('/auth/me/'); // Endpoint to verify user session
+          await apiGet('/users/me/'); // Verify user session with backend
           return true;
         } catch (error: any) {
           get().logout();
@@ -116,6 +118,8 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
     }
   )
@@ -126,6 +130,6 @@ export const startTokenCheck = () => {
   const interval = setInterval(async () => {
     const { checkTokenValidity } = useAuthStore.getState();
     await checkTokenValidity();
-  }, 60 * 1000); // Check every 1 minute
+  }, 15 * 60 * 1000); // Check every 15 minutes
   return () => clearInterval(interval);
 };

@@ -1,3 +1,4 @@
+// Optimized Home Page Code
 import { apiGet } from '@/app/api/api';
 import { News } from './types/news';
 import { Category } from './types/news';
@@ -15,51 +16,53 @@ interface CategoryWithNews extends Category {
 }
 
 interface HomePageProps {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
+  searchParams: { [key: string]: string | undefined };
+}
+
+function formatDate(dateStr: string | undefined): string {
+  if (!dateStr) return 'No Date';
+  const date = new Date(dateStr);
+  return isNaN(date.getTime())
+    ? 'Invalid Date'
+    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function fetchHomeData(categoryLimit = 5, trendingLimit = 6, carouselLimit = 5) {
+  const [carouselNews, trendingEntries, allCategories] = await Promise.all([
+    apiGet<News[]>(`/news/carousel/?limit=${carouselLimit}`).catch(() => []),
+    apiGet<TrendingNews[]>(`/news/trending/?limit=${trendingLimit}`).catch(() => []),
+    apiGet<Category[]>(`/news/categories/`).catch(() => []),
+  ]);
+
+  const trendingNews = await Promise.all(
+    trendingEntries
+      .sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
+      .slice(0, trendingLimit)
+      .map(async (entry) => {
+        try {
+          return await apiGet<News>(`/news/${entry.news}/`);
+        } catch {
+          return null;
+        }
+      })
+  ).then((news) => news.filter(Boolean) as News[]);
+
+  const categories: CategoryWithNews[] = await Promise.all(
+    allCategories.map(async (category) => {
+      try {
+        const news = await apiGet<News[]>(`/news/?category=${category.slug}&limit=${categoryLimit}`);
+        return { ...category, news };
+      } catch {
+        return { ...category, news: [] };
+      }
+    })
+  );
+
+  return { carouselNews, trendingNews, categories };
 }
 
 async function HomeContent({ searchParams }: HomePageProps) {
-  const resolvedSearchParams = await searchParams;
-  const trendingLimit = 6;
-  const categoryLimit = 5;
-  const carouselLimit = 5;
-  let carouselNews: News[] = [];
-  let trendingNews: News[] = [];
-  let categories: CategoryWithNews[] = [];
-
-  try {
-    carouselNews = await apiGet<News[]>(`/news/carousel/?limit=${carouselLimit}`);
-    const trendingEntries = await apiGet<TrendingNews[]>(`/news/trending/?limit=${trendingLimit}`);
-    const sortedTrendingEntries = trendingEntries
-      .sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
-      .slice(0, trendingLimit);
-    trendingNews = await Promise.all(
-      sortedTrendingEntries.map(async (entry) => {
-        const news = await apiGet<News>(`/news/${entry.news}/`);
-        return news;
-      })
-    );
-    const allCategories = await apiGet<Category[]>(`/news/categories/`);
-    categories = await Promise.all(
-      allCategories.map(async (category) => {
-        const news = await apiGet<News[]>(`/news/?category=${category.slug}&limit=${categoryLimit}`);
-        return { ...category, news };
-      })
-    );
-  } catch (error: any) {
-    console.error('Failed to fetch homepage data:', error.message, error);
-  }
-
-  const formatDate = (dateStr: string | undefined): string => {
-    if (!dateStr) return 'No Date';
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return 'Unknown Date';
-    }
-  };
+  const { carouselNews, trendingNews, categories } = await fetchHomeData();
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -74,7 +77,7 @@ async function HomeContent({ searchParams }: HomePageProps) {
         <AdBanner />
       </div>
 
- {trendingNews.length > 0 ? (
+      {trendingNews.length > 0 ? (
         <section className="mb-12">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Trending News</h2>
@@ -86,12 +89,10 @@ async function HomeContent({ searchParams }: HomePageProps) {
               Show All
             </Link>
           </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {trendingNews[0] && (
-              <Link
-                href={`/news/${trendingNews[0].id}`}
-                className="block group lg:col-span-2"
-              >
+              <Link href={`/news/${trendingNews[0].id}`} className="block group lg:col-span-2">
                 <div className="relative w-full h-[350px] sm:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden shadow-lg group-hover:shadow-xl">
                   {trendingNews[0].image ? (
                     <Image
@@ -103,8 +104,8 @@ async function HomeContent({ searchParams }: HomePageProps) {
                       quality={85}
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-2xl flex items-center justify-center">
-                      <span className="text-gray-500 text-lg">No Image Available</span>
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                      No Image Available
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/50 to-black/80 flex flex-col justify-end p-4 sm:p-6 lg:p-8">
@@ -130,8 +131,8 @@ async function HomeContent({ searchParams }: HomePageProps) {
                   href={`/news/${trendingNews[1].id}`}
                   className="block bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 h-full"
                 >
-                  {trendingNews[1].image ? (
-                    <div className="relative w-full h-64 sm:h-72 md:h-80 lg:h-80">
+                  <div className="relative w-full h-64 sm:h-72 md:h-80 lg:h-80">
+                    {trendingNews[1].image ? (
                       <Image
                         src={trendingNews[1].image}
                         alt={trendingNews[1].title}
@@ -140,18 +141,18 @@ async function HomeContent({ searchParams }: HomePageProps) {
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 300px"
                         quality={85}
                       />
-                    </div>
-                  ) : (
-                    <div className="w-full h-64 sm:h-72 md:h-80 bg-gray-200 flex items-center justify-center text-gray-500">
-                      No Image Available
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                        No Image Available
+                      </div>
+                    )}
+                  </div>
                   <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 mb-2">
                       {trendingNews[1].title}
                     </h3>
                     <p className="text-sm text-gray-600 line-clamp-3">
-                      {trendingNews[1].content || 'No content provided. Stay tuned for more details.'}
+                      {trendingNews[1].content || 'No content provided.'}
                     </p>
                     <div className="text-xs text-gray-500 mt-3 flex justify-between">
                       <span>{trendingNews[1].author?.username || 'Anonymous'}</span>
@@ -163,13 +164,12 @@ async function HomeContent({ searchParams }: HomePageProps) {
             )}
 
             <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-  {trendingNews.slice(2, 6).map((news) => (
-    <div key={news.id} className="h-full">
-      <NewsCard news={news} />
-    </div>
-  ))}
-</div>
-
+              {trendingNews.slice(2, 6).map((news) => (
+                <div key={news.id} className="h-full">
+                  <NewsCard news={news} />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       ) : (
@@ -183,10 +183,7 @@ async function HomeContent({ searchParams }: HomePageProps) {
           category.news.length > 0 && (
             <section key={category.id} className="mb-12">
               <div className="flex justify-between items-center mb-4">
-                <Link
-                  href={`/category/${category.slug}`}
-                  className="text-blue-600 font-medium"
-                >
+                <Link href={`/category/${category.slug}`} className="text-blue-600 font-medium">
                   <h2 className="text-2xl font-bold text-blue-900">{category.name} {'>>'}</h2>
                 </Link>
               </div>
@@ -209,7 +206,7 @@ async function HomeContent({ searchParams }: HomePageProps) {
   );
 }
 
-export default async function Home({ searchParams }: HomePageProps) {
+export default function Home({ searchParams }: HomePageProps) {
   return (
     <Suspense fallback={<HomeSkeleton />}>
       <HomeContent searchParams={searchParams} />
