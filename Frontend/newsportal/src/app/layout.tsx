@@ -9,7 +9,7 @@ import NavigationProgress from './components/loading/NavigationProgress';
 
 
 export const metadata: Metadata = {
-  title: 'News Portal',
+  title: 'Rolpa Online',
   description: 'A modern news portal built with Next.js and Django',
 };
 

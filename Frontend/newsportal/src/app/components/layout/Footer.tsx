@@ -36,7 +36,7 @@ export default function Footer() {
         {/* Logo / Brand */}
         <div className="text-center mb-6">
           <Link href="/" className="text-2xl font-bold text-white hover:text-blue-400 transition">
-            News Portal
+            Rolpa Online
           </Link>
           <p className="text-sm text-gray-400 mt-1">
             Your daily dose of trusted information.
@@ -80,7 +80,7 @@ export default function Footer() {
 
         {/* Footer Bottom */}
         <div className="text-center text-sm text-gray-500">
-          <p>© {currentYear} News Portal. All rights reserved.</p>
+          <p>© {currentYear} Rolpa Online. All rights reserved.</p>
           <p>
             Built with <span className="text-red-400">❤️</span> in Kathmandu.
           </p>
