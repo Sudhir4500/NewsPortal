@@ -1,33 +1,24 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "build_files.sh",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb", "runtime": "python3.11" }
-    },
-    {
-      "src": "core/wsgi.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb", "runtime": "python3.11" }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/staticfiles/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "core/wsgi.py",
-      "headers": {
-        "Cache-Control": "no-cache"
+    "version": 2,
+    "builds": [
+      {
+        "src": "build_files.sh",
+        "use": "@vercel/python",
+        "config": { "maxLambdaSize": "15mb", "runtime": "python3" }
+      },
+      {
+        "src": "core/wsgi.py",
+        "use": "@vercel/python",
+        "config": { "maxLambdaSize": "15mb", "runtime": "python3" }
       }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "core/wsgi.py"
+      }
+    ],
+    "env": {
+      "DJANGO_SETTINGS_MODULE": "core.settings"
     }
-  ],
-  "env": {
-    "DJANGO_SETTINGS_MODULE": "core.settings",
-    "DJANGO_SECRET_KEY": "your-secret-key",
-    "DEBUG": "False"
-  }
 }
