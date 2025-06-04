@@ -1,3 +1,4 @@
+// pages/index.tsx
 import { apiGet } from '@/app/api/api';
 import { News } from './types/news';
 import { Category } from './types/news';
@@ -10,6 +11,7 @@ import Image from 'next/image';
 import { Suspense } from 'react';
 import HomeSkeleton from './components/loading/HomeSkeleton';
 import { formatDate } from '@/utils/formatDate';
+import ErrorBoundary from './components/rendordelay/ErrorBoundary';// Import the ErrorBoundary
 
 interface CategoryWithNews extends Category {
   news: News[];
@@ -28,8 +30,8 @@ async function fetchWithRetry<T>(url: string, maxAttempts = 3, delay = 2000): Pr
       }
       return response;
     } catch (error) {
-      if (attempt === maxAttempts - 1) throw error; // Throw error on last attempt
-      await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
+      if (attempt === maxAttempts - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
   throw new Error('All retry attempts failed');
@@ -70,7 +72,7 @@ async function fetchHomeData(categoryLimit = 5, trendingLimit = 6, carouselLimit
     return { carouselNews, trendingNews, categories };
   } catch (error) {
     console.error('Failed to fetch home data:', error);
-    return { carouselNews: [], trendingNews: [], categories: [] }; // Fallback data
+    return { carouselNews: [], trendingNews: [], categories: [] };
   }
 }
 
@@ -224,7 +226,9 @@ async function HomeContent({ searchParams }: HomePageProps) {
 export default async function Home({ searchParams }: HomePageProps) {
   return (
     <Suspense fallback={<HomeSkeleton />}>
-      <HomeContent searchParams={searchParams} />
+      <ErrorBoundary>
+        <HomeContent searchParams={searchParams} />
+      </ErrorBoundary>
     </Suspense>
   );
 }
