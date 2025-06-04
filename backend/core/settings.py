@@ -245,7 +245,9 @@ USE_TZ = True  # Keep timezone support enabled
 
 
 # CORS settings
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'https://newsportal4500.netlify.app',
+]
 
 # Cloudinary settings
 

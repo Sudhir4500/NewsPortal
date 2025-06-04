@@ -11,56 +11,70 @@ import { Suspense } from 'react';
 import HomeSkeleton from './components/loading/HomeSkeleton';
 import { formatDate } from '@/utils/formatDate';
 
-
-// Import Next.js PageProps or define searchParams as a Promise
-
-
 interface CategoryWithNews extends Category {
   news: News[];
 }
 
-// Use Next.js PageProps directly or define searchParams as a Promise
 interface HomePageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+async function fetchWithRetry<T>(url: string, maxAttempts = 3, delay = 2000): Promise<T> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const response = await apiGet<T>(url);
+      if (!response || (Array.isArray(response) && response.length === 0)) {
+        throw new Error('Empty or invalid response');
+      }
+      return response;
+    } catch (error) {
+      if (attempt === maxAttempts - 1) throw error; // Throw error on last attempt
+      await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
+    }
+  }
+  throw new Error('All retry attempts failed');
+}
 
 async function fetchHomeData(categoryLimit = 5, trendingLimit = 6, carouselLimit = 5) {
-  const [carouselNews, trendingEntries, allCategories] = await Promise.all([
-    apiGet<News[]>(`/news/carousel/?limit=${carouselLimit}`).catch(() => []),
-    apiGet<TrendingNews[]>(`/news/trending/?limit=${trendingLimit}`).catch(() => []),
-    apiGet<Category[]>(`/news/categories/`).catch(() => []),
-  ]);
+  try {
+    const [carouselNews, trendingEntries, allCategories] = await Promise.all([
+      fetchWithRetry<News[]>(`/news/carousel/?limit=${carouselLimit}`),
+      fetchWithRetry<TrendingNews[]>(`/news/trending/?limit=${trendingLimit}`),
+      fetchWithRetry<Category[]>(`/news/categories/`),
+    ]);
 
-  const trendingNews = await Promise.all(
-    trendingEntries
-      .sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
-      .slice(0, trendingLimit)
-      .map(async (entry) => {
+    const trendingNews = await Promise.all(
+      trendingEntries
+        .sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
+        .slice(0, trendingLimit)
+        .map(async (entry) => {
+          try {
+            return await fetchWithRetry<News>(`/news/${entry.news}/`);
+          } catch {
+            return null;
+          }
+        })
+    ).then((news) => news.filter(Boolean) as News[]);
+
+    const categories: CategoryWithNews[] = await Promise.all(
+      allCategories.map(async (category) => {
         try {
-          return await apiGet<News>(`/news/${entry.news}/`);
+          const news = await fetchWithRetry<News[]>(`/news/?category=${category.slug}&limit=${categoryLimit}`);
+          return { ...category, news };
         } catch {
-          return null;
+          return { ...category, news: [] };
         }
       })
-  ).then((news) => news.filter(Boolean) as News[]);
+    );
 
-  const categories: CategoryWithNews[] = await Promise.all(
-    allCategories.map(async (category) => {
-      try {
-        const news = await apiGet<News[]>(`/news/?category=${category.slug}&limit=${categoryLimit}`);
-        return { ...category, news };
-      } catch {
-        return { ...category, news: [] };
-      }
-    })
-  );
-
-  return { carouselNews, trendingNews, categories };
+    return { carouselNews, trendingNews, categories };
+  } catch (error) {
+    console.error('Failed to fetch home data:', error);
+    return { carouselNews: [], trendingNews: [], categories: [] }; // Fallback data
+  }
 }
 
 async function HomeContent({ searchParams }: HomePageProps) {
-  // Resolve the searchParams Promise
   const resolvedSearchParams = await searchParams;
   const { carouselNews, trendingNews, categories } = await fetchHomeData();
 
