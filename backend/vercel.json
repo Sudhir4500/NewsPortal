@@ -1,29 +1,26 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "core/wsgi.py",
-            "use": "@vercel/python",
-            "config": {
-                "pythonVersion": "3.9"
-            }
-        },
-        {
-            "src": "staticfiles/**",
-            "use": "@vercel/static"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/static/(.*)",
-            "dest": "/staticfiles/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "core/wsgi.py"
-        }
-    ],
-    "env": {
-        "DJANGO_SETTINGS_MODULE": "core.settings"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "staticfiles/**",
+      "use": "@vercel/static"
     }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/staticfiles/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ],
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "core.settings"
+  }
 }

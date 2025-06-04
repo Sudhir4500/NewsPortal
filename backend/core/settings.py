@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-#y@4r248=srhrgjj5t6*kzh4zc=_7(&u0azzy92pu3!+gp(4i_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1','.onrender.com']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -247,6 +247,7 @@ USE_TZ = True  # Keep timezone support enabled
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     'https://newsportal4500.netlify.app',
+    "http://localhost:3000",
 ]
 
 # Cloudinary settings
@@ -256,6 +257,10 @@ cloudinary.config(
   secure = True
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+#  static files settings
+# Whitenoise settings for serving static files in production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 
